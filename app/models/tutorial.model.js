@@ -4,7 +4,8 @@ module.exports = mongoose => {
       mongoose.Schema(
         {
           title: String,
-          description: String,
+          age: Number,
+          gender: String,
           published: Boolean
         },
         { timestamps: true }

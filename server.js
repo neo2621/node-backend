@@ -65,6 +65,8 @@ db.mongoose
   // Delete a Tutorial with id
 router.delete("/:id", tutorials.delete);
 
+router.patch("/:id", tutorials.patch);
+
 // Delete all Tutorials
 router.delete("/", tutorials.deleteAll);
 

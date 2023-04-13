@@ -13,6 +13,7 @@ exports.create = (req, res) => {
     const tutorial = new Tutorial({
       title: req.body.title,
       description: req.body.description,
+      age:req.body.age,
       published: req.body.published ? req.body.published : false
     });
   
@@ -20,7 +21,7 @@ exports.create = (req, res) => {
     tutorial
       .save(tutorial)
       .then(data => {
-        res.send(data);
+        res.send({message:"Tutorial was saved successfully!"});
       })
       .catch(err => {
         res.status(500).send({
@@ -87,6 +88,29 @@ exports.update = (req, res) => {
       });
   };
 
+  exports.patch = (req, res) => {
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Data to update can not be empty!"
+      });
+    }
+  
+    const id = req.params.id;
+  
+    Tutorial.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
+      .then(data => {
+        if (!data) {
+          res.status(404).send({
+            message: `Cannot update Tutorial with id=${id}. Maybe Tutorial was not found!`
+          });
+        } else res.send({ message: "Tutorial was patch successfully." });
+      })
+      .catch(err => {
+        res.status(500).send({
+          message: "Error updating Tutorial with id=" + id
+        });
+      });
+  };
 // Delete a Tutorial with the specified id in the request
 exports.delete = (req, res) => {
     const id = req.params.id;
@@ -109,7 +133,6 @@ exports.delete = (req, res) => {
         });
       });
   };
-
 
 // Delete all Tutorials from the database.
 exports.deleteAll = (req, res) => {
