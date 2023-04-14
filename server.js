@@ -1,72 +1,53 @@
-const express = require("express");
-const cors = require("cors");
-const app = express();
+require('dotenv').config()
+const express = require('express')
+const app = express()
+const path = require('path')
+const { logger, logEvents } = require('./middleware/logger.js')
+const errorHandler = require('./middleware/errorHandler.js')
+const cookieParser = require('cookie-parser')
+const cors = require('cors')
+const corsOptions = require('./app/config/corsOptions.js')
+const connectDB = require('./app/config/dbConn.js')
+const mongoose = require('mongoose')
+const PORT = process.env.PORT || 3500
 
-var corsOptions = {
-  origin: "*"
-};
+console.log(process.env.NODE_ENV)
 
-app.use(cors(corsOptions));
+connectDB()
 
-// parse requests of content-type - application/json
-app.use(express.json());
+app.use(logger)
 
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true }));
+app.use(cors(corsOptions))
 
-// simple route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to bezkoder application." });
-});
+app.use(express.json())
 
-require("./app/routes/tutorial.routes.js")
+app.use(cookieParser())
 
+app.use('/', express.static(path.join(__dirname, 'public')))
 
-// set port, listen for requests
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
-});
+app.use('/', require('./app/routes/root.js'))
+app.use('/users', require('./app/routes/userRoutes.js'))
+app.use('/notes', require('./app/routes/noteRoutes.js'))
 
-const db = require("./app/models/index.js");
-db.mongoose
-  .connect(db.url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => {
-    console.log("Connected to the database!");
-  })
-  .catch(err => {
-    console.log("Cannot connect to the database!", err);
-    process.exit();
-  });
+app.all('*', (req, res) => {
+    res.status(404)
+    if (req.accepts('html')) {
+        res.sendFile(path.join(__dirname, 'views', '404.html'))
+    } else if (req.accepts('json')) {
+        res.json({ message: '404 Not Found' })
+    } else {
+        res.type('txt').send('404 Not Found')
+    }
+})
 
-  const tutorials = require("./app/controllers/tutorial.controller.js")
-  
-  var router = require("express").Router();
+app.use(errorHandler)
 
-  // Create a new Tutorial
-  router.post("/", tutorials.create);
+mongoose.connection.once('open', () => {
+    console.log('Connected to MongoDB')
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+})
 
-  // Retrieve all Tutorials
-  router.get("/", tutorials.findAll);
-
-  // Retrieve all published Tutorials
-  router.get("/published", tutorials.findAllPublished);
-
-  // Retrieve a single Tutorial with id
-  router.get("/:id", tutorials.findOne);
-
-  // Update a Tutorial with id
-  router.put("/:id", tutorials.update);
-
-  // Delete a Tutorial with id
-router.delete("/:id", tutorials.delete);
-
-router.patch("/:id", tutorials.patch);
-
-// Delete all Tutorials
-router.delete("/", tutorials.deleteAll);
-
-app.use('/api/tutorials', router);
+mongoose.connection.on('error', err => {
+    console.log(err)
+    logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log')
+})
