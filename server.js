@@ -6,6 +6,10 @@ var corsOptions = {
   origin: "*"
 };
 
+// app.use("./app/routes/tutorial.routes")
+
+//app.use("app",require('./app/routes/tutorial.routes'))
+
 app.use(cors(corsOptions));
 
 // parse requests of content-type - application/json
@@ -19,8 +23,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to bezkoder application." });
 });
 
-require("./app/routes/tutorial.routes.js")
-
+require("./app/routes/tutorial.routes")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
